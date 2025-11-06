@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Web Forms</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -webkit-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1f2937;
+            min-height: 100%;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .forms-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .submissions-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1.5rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+
+        .tab-btn.active {
+            background: #3b82f6;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        .form-container {
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-input.valid {
+            border-color: #10b981;
+        }
+
+        .form-input.invalid {
+            border-color: #ef4444;
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #10b981;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .star {
+            font-size: 2rem;
+            color: #d1d5db;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #fbbf24;
+            transform: scale(1.1);
+        }
+
+        .radio-group,
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .radio-item,
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .radio-item input,
+        .checkbox-item input {
+            width: auto;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn.loading {
+            color: transparent;
+        }
+
+        .submit-btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .success-animation.show {
+            display: block;
+            animation: successPop 0.5s ease;
+        }
+
+        @keyframes successPop {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .submissions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .submissions-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .submissions-count {
+            background: #3b82f6;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .search-filter {
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            box-sizing: border-box;
+        }
+
+        .submission-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .submission-item:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+        }
+
+        .submission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .submission-type {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .submission-date {
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        .submission-content {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .no-submissions {
+            text-align: center;
+            color: #6b7280;
+            padding: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .forms-section,
+            .submissions-section {
+                padding: 1.5rem;
+            }
+
+            .form-tabs {
+                justify-content: center;
+            }
+
+            .tab-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container">
+   <div class="header">
+    <h1 id="app-title">📝 Interactive Web Forms</h1>
+    <p id="subtitle">Create and manage dynamic forms with real-time validation</p>
+   </div>
+   <div class="main-content">
+    <div class="forms-section">
+     <div class="form-tabs"><button class="tab-btn active" onclick="switchForm('contact')">Contact Form</button> <button class="tab-btn" onclick="switchForm('feedback')">Feedback Form</button> <button class="tab-btn" onclick="switchForm('survey')">Survey Form</button> <button class="tab-btn" onclick="switchForm('registration')">Registration</button>
+     </div>
+     <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+     </div><!-- Contact Form -->
+     <div class="form-container active" id="contact-form">
+      <h3>Contact Us</h3>
+      <form id="contact-form-element">
+       <div class="form-group"><label for="contact-name" class="form-label">Full Name *</label> <input type="text" id="contact-name" class="form-input" required>
+        <div class="error-message">
+         Please enter your full name
+        </div>
+        <div class="success-message">
+         ✓ Looks good!
+        </div>
+       </div>
+       <div class="form-group"><label for="contact-email" class="form-label">Email Address *</label> <input type="email" id="contact-email" class="form-input" required>
+        <div class="error-message">
+         Please enter a valid email address
+        </div>
+        <div class="success-message">
+         ✓ Valid email!
+        </div>
+       </div>
+       <div class="form-group"><label for="contact-phone" class="form-label">Phone Number</label> <input type="tel" id="contact-phone" class="form-input">
+        <div class="error-message">
+         Please enter a valid phone number
+        </div>
+        <div class="success-message">
+         ✓ Valid phone number!
+        </div>
+       </div>
+       <div class="form-group"><label for="contact-message" class="form-label">Message *</label> <textarea id="contact-message" class="form-input form-textarea" required placeholder="Tell us how we can help you..."></textarea>
+        <div class="error-message">
+         Please enter your message
+        </div>
+        <div class="success-message">
+         ✓ Message looks good!
+        </div>
+       </div><button type="submit" class="submit-btn">Send Message</button>
+      </form>
+     </div><!-- Feedback Form -->
+     <div class="form-container" id="feedback-form">
+      <h3>Share Your Feedback</h3>
+      <form id="feedback-form-element">
+       <div class="form-group"><label class="form-label">Rate Your Experience *</label>
+        <div class="star-rating" id="star-rating"><span class="star" data-rating="1">⭐</span> <span class="star" data-rating="2">⭐</span> <span class="star" data-rating="3">⭐</span> <span class="star" data-rating="4">⭐</span> <span class="star" data-rating="5">⭐</span>
+        </div><input type="hidden" id="rating-value" required>
+        <div class="error-message">
+         Please select a rating
+        </div>
+       </div>
+       <div class="form-group"><label for="feedback-name" class="form-label">Your Name *</label> <input type="text" id="feedback-name" class="form-input" required>
+        <div class="error-message">
+         Please enter your name
+        </div>
+       </div>
+       <div class="form-group"><label for="feedback-email" class="form-label">Email Address *</label> <input type="email" id="feedback-email" class="form-input" required>
+        <div class="error-message">
+         Please enter a valid email
+        </div>
+       </div>
+       <div class="form-group"><label for="feedback-message" class="form-label">Your Feedback *</label> <textarea id="feedback-message" class="form-input form-textarea" required placeholder="Tell us about your experience..."></textarea>
+        <div class="error-message">
+         Please share your feedback
+        </div>
+       </div><button type="submit" class="submit-btn">Submit Feedback</button>
+      </form>
+     </div><!-- Survey Form -->
+     <div class="form-container" id="survey-form">
+      <h3>Quick Survey</h3>
+      <form id="survey-form-element">
+       <div class="form-group"><label class="form-label">How did you hear about us? *</label>
+        <div class="radio-group">
+         <div class="radio-item"><input type="radio" id="source-social" name="source" value="social" required> <label for="source-social">Social Media</label>
+         </div>
+         <div class="radio-item"><input type="radio" id="source-search" name="source" value="search" required> <label for="source-search">Search Engine</label>
+         </div>
+         <div class="radio-item"><input type="radio" id="source-friend" name="source" value="friend" required> <label for="source-friend">Friend/Family</label>
+         </div>
+         <div class="radio-item"><input type="radio" id="source-other" name="source" value="other" required> <label for="source-other">Other</label>
+         </div>
+        </div>
+        <div class="error-message">
+         Please select an option
+        </div>
+       </div>
+       <div class="form-group"><label class="form-label">What interests you most? (Select all that apply)</label>
+        <div class="checkbox-group">
+         <div class="checkbox-item"><input type="checkbox" id="interest-web" name="interests" value="web"> <label for="interest-web">Web Development</label>
+         </div>
+         <div class="checkbox-item"><input type="checkbox" id="interest-mobile" name="interests" value="mobile"> <label for="interest-mobile">Mobile Apps</label>
+         </div>
+         <div class="checkbox-item"><input type="checkbox" id="interest-design" name="interests" value="design"> <label for="interest-design">UI/UX Design</label>
+         </div>
+         <div class="checkbox-item"><input type="checkbox" id="interest-marketing" name="interests" value="marketing"> <label for="interest-marketing">Digital Marketing</label>
+         </div>
+        </div>
+       </div>
+       <div class="form-group"><label for="survey-email" class="form-label">Email Address *</label> <input type="email" id="survey-email" class="form-input" required>
+        <div class="error-message">
+         Please enter a valid email
+        </div>
+       </div><button type="submit" class="submit-btn">Complete Survey</button>
+      </form>
+     </div><!-- Registration Form -->
+     <div class="form-container" id="registration-form">
+      <h3>Create Account</h3>
+      <form id="registration-form-element">
+       <div class="form-group"><label for="reg-name" class="form-label">Full Name *</label> <input type="text" id="reg-name" class="form-input" required>
+        <div class="error-message">
+         Please enter your full name
+        </div>
+       </div>
+       <div class="form-group"><label for="reg-email" class="form-label">Email Address *</label> <input type="email" id="reg-email" class="form-input" required>
+        <div class="error-message">
+         Please enter a valid email
+        </div>
+       </div>
+       <div class="form-group"><label for="reg-phone" class="form-label">Phone Number *</label> <input type="tel" id="reg-phone" class="form-input" required>
+        <div class="error-message">
+         Please enter your phone number
+        </div>
+       </div>
+       <div class="form-group"><label for="reg-company" class="form-label">Company/Organization</label> <input type="text" id="reg-company" class="form-input">
+       </div>
+       <div class="form-group"><label class="form-label">Account Type *</label>
+        <div class="radio-group">
+         <div class="radio-item"><input type="radio" id="type-personal" name="account-type" value="personal" required> <label for="type-personal">Personal</label>
+         </div>
+         <div class="radio-item"><input type="radio" id="type-business" name="account-type" value="business" required> <label for="type-business">Business</label>
+         </div>
+        </div>
+        <div class="error-message">
+         Please select account type
+        </div>
+       </div><button type="submit" class="submit-btn">Create Account</button>
+      </form>
+     </div>
+    </div>
+    <div class="submissions-section">
+     <div class="submissions-header">
+      <h3 class="submissions-title">Form Submissions</h3><span class="submissions-count" id="submissions-count">0</span>
+     </div>
+     <div class="search-filter"><input type="text" class="search-input" id="search-submissions" placeholder="Search submissions...">
+     </div>
+     <div id="submissions-list">
+      <div class="no-submissions">
+       <p>No submissions yet</p>
+       <p>Fill out a form to see it here!</p>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <div class="success-animation" id="success-animation">
+   <div style="font-size: 3rem; margin-bottom: 1rem;">
+    🎉
+   </div>
+   <h3 style="color: #10b981; margin-bottom: 0.5rem;">Success!</h3>
+   <p style="color: #6b7280; margin: 0;">Your form has been submitted successfully.</p>
+  </div>
+  <script>
+        const defaultConfig = {
+            app_title: "📝 Interactive Web Forms",
+            subtitle: "Create and manage dynamic forms with real-time validation"
+        };
+
+        let currentFormData = [];
+        let currentRecordCount = 0;
+
+        const dataHandler = {
+            onDataChanged(data) {
+                currentFormData = data;
+                currentRecordCount = data.length;
+                renderSubmissions(data);
+                updateSubmissionsCount();
+            }
+        };
+
+        async function onConfigChange(config) {
+            document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
+            document.getElementById('subtitle').textContent = config.subtitle || defaultConfig.subtitle;
+        }
+
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
+        }
+
+        function mapToEditPanelValues(config) {
+            return new Map([
+                ["app_title", config.app_title || defaultConfig.app_title],
+                ["subtitle", config.subtitle || defaultConfig.subtitle]
+            ]);
+        }
+
+        // Initialize SDKs
+        async function initializeApp() {
+            if (window.elementSdk) {
+                window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange,
+                    mapToCapabilities,
+                    mapToEditPanelValues
+                });
+            }
+
+            if (window.dataSdk) {
+                const result = await window.dataSdk.init(dataHandler);
+                if (!result.isOk) {
+                    console.error("Failed to initialize data SDK");
+                }
+            }
+        }
+
+        let currentForm = 'contact';
+
+        function switchForm(formType) {
+            // Update tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.form-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            document.getElementById(formType + '-form').classList.add('active');
+
+            currentForm = formType;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const activeForm = document.querySelector('.form-container.active');
+            const inputs = activeForm.querySelectorAll('input[required], textarea[required]');
+            const filled = Array.from(inputs).filter(input => {
+                if (input.type === 'radio') {
+                    return activeForm.querySelector(`input[name="${input.name}"]:checked`);
+                }
+                return input.value.trim() !== '';
+            });
+
+            const progress = (filled.length / inputs.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        function setupValidation() {
+            const forms = document.querySelectorAll('form');
+            
+            forms.forEach(form => {
+                const inputs = form.querySelectorAll('input, textarea');
+                
+                inputs.forEach(input => {
+                    input.addEventListener('input', function() {
+                        validateField(this);
+                        updateProgress();
+                    });
+
+                    input.addEventListener('blur', function() {
+                        validateField(this);
+                    });
+                });
+
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await handleFormSubmit(this);
+                });
+            });
+
+            // Star rating
+            const stars = document.querySelectorAll('.star');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    document.getElementById('rating-value').value = rating;
+                    
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                    
+                    validateField(document.getElementById('rating-value'));
+                    updateProgress();
+                });
+            });
+
+            // Search functionality
+            document.getElementById('search-submissions').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const filtered = currentFormData.filter(submission => {
+                    const searchableText = `${submission.form_type} ${submission.name || ''} ${submission.email || ''} ${submission.message || ''} ${submission.feedback || ''}`.toLowerCase();
+                    return searchableText.includes(searchTerm);
+                });
+                renderSubmissions(filtered);
+            });
+        }
+
+        function validateField(field) {
+            const errorMsg = field.parentNode.querySelector('.error-message');
+            const successMsg = field.parentNode.querySelector('.success-message');
+            let isValid = true;
+
+            if (field.hasAttribute('required') && !field.value.trim()) {
+                isValid = false;
+            } else if (field.type === 'email' && field.value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                isValid = emailRegex.test(field.value);
+            } else if (field.type === 'tel' && field.value) {
+                const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+                isValid = phoneRegex.test(field.value.replace(/\s/g, ''));
+            }
+
+            if (isValid && field.value.trim()) {
+                field.classList.remove('invalid');
+                field.classList.add('valid');
+                if (errorMsg) errorMsg.style.display = 'none';
+                if (successMsg) successMsg.style.display = 'block';
+            } else if (!isValid) {
+                field.classList.remove('valid');
+                field.classList.add('invalid');
+                if (errorMsg) errorMsg.style.display = 'block';
+                if (successMsg) successMsg.style.display = 'none';
+            } else {
+                field.classList.remove('valid', 'invalid');
+                if (errorMsg) errorMsg.style.display = 'none';
+                if (successMsg) successMsg.style.display = 'none';
+            }
+
+            return isValid;
+        }
+
+        async function handleFormSubmit(form) {
+            if (currentRecordCount >= 999) {
+                showNotification("Maximum limit of 999 submissions reached. Please delete some submissions first.", "error");
+                return;
+            }
+
+            const submitBtn = form.querySelector('.submit-btn');
+            const formData = new FormData(form);
+            const data = {};
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            // Validate all fields
+            const inputs = form.querySelectorAll('input, textarea');
+            let isFormValid = true;
+
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isFormValid = false;
+                }
+            });
+
+            // Check required radio buttons
+            const radioGroups = form.querySelectorAll('input[type="radio"][required]');
+            const radioGroupNames = [...new Set(Array.from(radioGroups).map(r => r.name))];
+            
+            radioGroupNames.forEach(groupName => {
+                const checked = form.querySelector(`input[name="${groupName}"]:checked`);
+                if (!checked) {
+                    isFormValid = false;
+                    const errorMsg = form.querySelector(`input[name="${groupName}"]`).closest('.form-group').querySelector('.error-message');
+                    if (errorMsg) errorMsg.style.display = 'block';
+                }
+            });
+
+            if (!isFormValid) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                return;
+            }
+
+            // Collect form data
+            for (let [key, value] of formData.entries()) {
+                if (data[key]) {
+                    if (Array.isArray(data[key])) {
+                        data[key].push(value);
+                    } else {
+                        data[key] = [data[key], value];
+                    }
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            // Add special handling for checkboxes and rating
+            if (currentForm === 'survey') {
+                const interests = Array.from(form.querySelectorAll('input[name="interests"]:checked')).map(cb => cb.value);
+                data.interests = interests.join(', ');
+            }
+
+            if (currentForm === 'feedback') {
+                data.rating = parseInt(document.getElementById('rating-value').value);
+            }
+
+            // Prepare submission data
+            const submissionData = {
+                form_type: currentForm,
+                name: data.name || data['contact-name'] || data['feedback-name'] || data['reg-name'] || '',
+                email: data.email || data['contact-email'] || data['feedback-email'] || data['survey-email'] || data['reg-email'] || '',
+                phone: data.phone || data['contact-phone'] || data['reg-phone'] || '',
+                message: data.message || data['contact-message'] || '',
+                rating: data.rating || 0,
+                feedback: data['feedback-message'] || '',
+                submitted_at: new Date().toISOString(),
+                form_data: JSON.stringify(data)
+            };
+
+            try {
+                const result = await window.dataSdk.create(submissionData);
+                
+                if (result.isOk) {
+                    showSuccessAnimation();
+                    form.reset();
+                    
+                    // Reset validation states
+                    inputs.forEach(input => {
+                        input.classList.remove('valid', 'invalid');
+                        const errorMsg = input.parentNode.querySelector('.error-message');
+                        const successMsg = input.parentNode.querySelector('.success-message');
+                        if (errorMsg) errorMsg.style.display = 'none';
+                        if (successMsg) successMsg.style.display = 'none';
+                    });
+
+                    // Reset star rating
+                    if (currentForm === 'feedback') {
+                        document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+                        document.getElementById('rating-value').value = '';
+                    }
+
+                    updateProgress();
+                } else {
+                    showNotification("Failed to submit form. Please try again.", "error");
+                }
+            } catch (error) {
+                showNotification("An error occurred. Please try again.", "error");
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+        }
+
+        function showSuccessAnimation() {
+            const animation = document.getElementById('success-animation');
+            animation.classList.add('show');
+            
+            setTimeout(() => {
+                animation.classList.remove('show');
+            }, 3000);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 2rem;
+                right: 2rem;
+                background: ${type === 'error' ? '#ef4444' : '#10b981'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        function renderSubmissions(submissions) {
+            const container = document.getElementById('submissions-list');
+            
+            if (submissions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-submissions">
+                        <p>No submissions found</p>
+                        <p>Try adjusting your search or submit a form!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = submissions.map(submission => {
+                const date = new Date(submission.submitted_at).toLocaleDateString();
+                const time = new Date(submission.submitted_at).toLocaleTimeString();
+                
+                let content = '';
+                if (submission.name) content += `<strong>${submission.name}</strong><br>`;
+                if (submission.email) content += `📧 ${submission.email}<br>`;
+                if (submission.phone) content += `📞 ${submission.phone}<br>`;
+                if (submission.message) content += `💬 ${submission.message.substring(0, 100)}${submission.message.length > 100 ? '...' : ''}<br>`;
+                if (submission.feedback) content += `💭 ${submission.feedback.substring(0, 100)}${submission.feedback.length > 100 ? '...' : ''}<br>`;
+                if (submission.rating > 0) content += `⭐ Rating: ${submission.rating}/5<br>`;
+
+                return `
+                    <div class="submission-item">
+                        <div class="submission-header">
+                            <span class="submission-type">${submission.form_type.charAt(0).toUpperCase() + submission.form_type.slice(1)} Form</span>
+                            <span class="submission-date">${date} ${time}</span>
+                        </div>
+                        <div class="submission-content">${content}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateSubmissionsCount() {
+            document.getElementById('submissions-count').textContent = currentRecordCount;
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupValidation();
+            updateProgress();
+        });
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9962cd2ce72484b9',t:'MTc2MTc0MjI1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
